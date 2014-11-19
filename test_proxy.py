@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import jbus
 
-test = jbus.service.Proxy(50007)
-
-
+test = jbus.service.Proxy("test-service")
+print test.test()
