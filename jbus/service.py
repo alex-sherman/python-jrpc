@@ -6,6 +6,7 @@ import exception
 import json
 import message
 import inspect
+from nameservice import NameServiceResponder
 
 class method(object):
     def __init__(self, remote_func):
@@ -22,7 +23,7 @@ class Object(threading.Thread):
         self.log = logging.Logger(debug)
         self.running = True
         self.service_name = service_name
-        self.daemon_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.name_service_thread = None
         self.registered = False
         self.port = 0
         socket.setdefaulttimeout(1)
@@ -53,6 +54,8 @@ class Object(threading.Thread):
         return self.registered
 
     def run(self):
+        self.name_service_thread = NameServiceResponder(self, self.log)
+        self.name_service_thread.start()
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.bind(('', self.port))
         self.port = self.s.getsockname()[1]              
@@ -60,8 +63,8 @@ class Object(threading.Thread):
         self.log.info("Service listening on port {0}".format(self.port))
         while self.running:
             try:
-                if not self.registered:
-                    self.register()
+                #if not self.registered:
+                    #self.register()
                 conn, addr = self.s.accept()
                 self.log.info("Got connection from {0}".format(addr))
                 responder = ServiceResponder(self, conn, addr, self.log)
@@ -74,6 +77,10 @@ class Object(threading.Thread):
                 self.close()
             
     def close(self):
+        if self.name_service_thread != None:
+            nst = self.name_service_thread
+            self.name_service_thread = None
+            nst.close()
         for responder in self.responders:
             responder.close()
         if not self.running: return
@@ -173,13 +180,12 @@ class SocketProxy(object):
 class Proxy(SocketProxy):
     def __init__(self, service_name):
         self.service_name = service_name
-        daemon_proxy = SocketProxy(50007)
-        try:
-            self.service_port = daemon_proxy.get_service(service_name)
-        except Exception as e:
-            daemon_proxy.close()
-            raise e
-        daemon_proxy.close()
+        self.name_service_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.name_service_socket.bind(('', 0))
+        self.name_service_socket.sendto(service_name, ("localhost", 50007))
+        response = self.name_service_socket.recv(1500)
+        self.service_port = json.loads(response)
+        self.name_service_socket.close()
         SocketProxy.__init__(self, self.service_port)
         
         
