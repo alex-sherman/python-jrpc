@@ -19,8 +19,7 @@ class NameServiceResponder(threading.Thread):
                 sport, dport = struct.unpack("!HH", data[20:24])
                 addr = (addr[0], sport)
                 if dport == 50007:
-                    msg = message.Message()
-                    msg.fromdata(data[28:])
+                    msg = message.fromdata(data[28:])
                     if hasattr(msg, "procedure") and hasattr(msg, "args") \
                         and msg.procedure == "get_service" and msg.args[0] == self.service_obj.service_name:
                         self.log.info("Got request for this service from {0}".format(addr))

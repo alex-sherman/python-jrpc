@@ -100,8 +100,7 @@ class ServiceResponder(threading.Thread):
         recvd = ""
         while self.running:
             try:
-                msg = message.Message()
-                msg.deserialize(self.socket)
+                msg = message.deserialize(self.socket)
                 response = message.Message({})
                 if msg.obj["procedure"] in self.service_obj.jbus_methods:
                     try:
@@ -155,8 +154,7 @@ class SocketProxy(object):
     def rpc(self, remote_procedure, args):
         msg = message.Message({"procedure": remote_procedure, "args": args})
         msg.serialize(self.socket)
-        response = message.Message()
-        response.deserialize(self.socket)
+        response = message.deserialize(self.socket)
         status = response.status
         if status == 200:
             return response.data
