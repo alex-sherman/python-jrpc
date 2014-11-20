@@ -2,6 +2,7 @@ import threading, socket
 import json
 import struct
 import message
+import exception
 
 class NameServiceResponder(threading.Thread):
     def __init__(self, service_obj, log):
@@ -20,15 +21,20 @@ class NameServiceResponder(threading.Thread):
                 addr = (addr[0], sport)
                 if dport == 50007:
                     msg = message.fromdata(data[28:])
-                    if hasattr(msg, "procedure") and hasattr(msg, "args") \
-                        and msg.procedure == "get_service" and msg.args[0] == self.service_obj.service_name:
-                        self.log.info("Got request for this service from {0}".format(addr))
-                        response = message.Message({"status": 200, "data": self.service_obj.port})
-                        res_str = response.todata()
-                        tosend = struct.pack("!HHHH{0}s".format(len(res_str)),dport,sport,len(res_str) + 8,0,res_str)
-                        self.s.sendto(tosend, addr)
+                    if type(msg) is message.Request:
+                        if msg.method == "get_service" and msg.params[0] == self.service_obj.service_name:
+                            self.log.info("Got request for this service from {0}".format(addr))
+                            response = message.Response(msg.id)
+                            response.result = self.service_obj.port
+                            res_str = response.todata()
+                            tosend = struct.pack("!HHHH{0}s".format(len(res_str)),dport,sport,len(res_str) + 8,0,res_str)
+                            self.s.sendto(tosend, addr)
+                    else:
+                        self.log.info("Got an unkown message")
             except socket.timeout:
                 continue
+            except exception.MessageException as e:
+                self.log.info("Received an invalid message from {0}".format(addr))
             except Exception as e:
                 self.log.error("Name service error: {0}".format(e))
                 self.close()

@@ -1,15 +1,20 @@
 #!/usr/bin/python
-import jbus
+import jrpc
 try:
-    test = jbus.service.Proxy("test-service")
+    test = None
+    test = jrpc.service.Proxy("test-service")
     print test.test()
-    del test
+    test.herp()
 except Exception as e:
     print e
-try:
-    test = jbus.service.Proxy("test-service2")
-    print test.test()
+finally:
     del test
+try:
+    test = None
+    test = jrpc.service.Proxy("test-service2")
+    print test.test()
 except Exception as e:
     print e
+finally:
+    del test
 

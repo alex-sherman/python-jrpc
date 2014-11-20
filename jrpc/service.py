@@ -101,18 +101,19 @@ class ServiceResponder(threading.Thread):
         while self.running:
             try:
                 msg = message.deserialize(self.socket)
-                response = message.Message({})
-                if msg.obj["procedure"] in self.service_obj.jbus_methods:
-                    try:
-                        response.obj["data"] = self.service_obj.jbus_methods[msg.obj["procedure"]](msg.obj["args"])
-                        response.obj["status"] = 200
-                    except Exception as e:
-                        response.obj["status"] = 500
-                        response.obj["data"] = (str(type(e)), e.message)
+                if type(msg) is message.Request:
+                    response = message.Response(msg.id)
+                    if msg.method in self.service_obj.jbus_methods:
+                        try:
+                            response.result = self.service_obj.jbus_methods[msg.method](msg.params)
+                        except Exception as e:
+                            response.error = {"code": -32603, "message": "An error occured"}
+                    else:
+                        response.error = {"code": -32601, "message": "No such method {0}".format(msg.method)}
+                    
+                    response.serialize(self.socket)
                 else:
-                    response.obj["status"] = 404
-                
-                response.serialize(self.socket)
+                    self.log.info("Got a message of uknown type")
             except socket.timeout:
                 continue
             except exception.MessageException:
@@ -145,6 +146,7 @@ class SocketProxy(object):
     def __init__(self, port, socktype = socket.SOCK_STREAM):
         socket.setdefaulttimeout(1)
         self.socket = None
+        self.next_id = 1
         try:
             self.socket = socket.socket(socket.AF_INET, socktype)
             self.socket.connect(('localhost', port))
@@ -152,18 +154,20 @@ class SocketProxy(object):
             raise exception.ServiceException("Failed to connected to service", e)
 
     def rpc(self, remote_procedure, args):
-        msg = message.Message({"procedure": remote_procedure, "args": args})
+        msg = message.Request(self.next_id, remote_procedure)
+        self.next_id += 1
+        msg.params = args
         msg.serialize(self.socket)
         response = message.deserialize(self.socket)
-        status = response.status
-        if status == 200:
-            return response.data
-        if status == 404:
-            raise exception.ServiceException("No such method {0}".format(remote_procedure), AttributeError)
-        if status == 500:
-            raise exception.ServiceException("An exception occured of type {0} with message: {1}"
-                                             .format(response.data[0], response.data[1]), Exception)
-        return response.obj["data"]
+        if not type(response) is message.Response:
+            raise exception.ServiceException("Received a message of uknown type")
+        if response.id != msg.id: raise exception.ServiceException("Got a response for a different request ID")
+        if hasattr(response, "result"):
+            return response.result
+        elif hasattr(response, "error"):
+            ############# TODO: Better exception handling ############
+            raise Exception("JRPC Error {0}".format(response.error))
+        raise Exception("Deserialization failure!!")
 
     def close(self):
         if self.socket != None:
