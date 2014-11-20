@@ -16,15 +16,11 @@ class NameServiceResponder(threading.Thread):
             try:
                 data, addr = self.s.recvfrom(1500)
                 sport, dport = struct.unpack("!HH", data[20:24])
-                print data[28:], self.service_obj.service_name, data[28:] == self.service_obj.service_name
-                print dport, sport
                 addr = (addr[0], sport)
-                
                 if dport == 50007 and data[28:] == self.service_obj.service_name:
                     self.log.info("Got request for this service from {0}".format(addr))
                     json_str = json.dumps(self.service_obj.port)
-                    tosend = struct.pack("!HHHH{0}s".format(len(json_str)),dport,sport,len(json_str),0,json_str)
-                    print tosend
+                    tosend = struct.pack("!HHHH{0}s".format(len(json_str)),dport,sport,len(json_str) + 8,0,json_str)
                     self.s.sendto(tosend, addr)
             except socket.timeout:
                 continue
