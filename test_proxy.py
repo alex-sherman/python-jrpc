@@ -13,8 +13,10 @@ try:
     test = None
     test = jrpc.service.SocketProxy(50008)
     print test.test()
+except ArithmeticError as e:
+    print "Fancy exceptions"
 except Exception as e:
-    print e
+    print type(e), e
 finally:
     del test
 

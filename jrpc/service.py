@@ -109,7 +109,7 @@ class ServiceResponder(threading.Thread):
                             response.result = self.service_obj.jbus_methods[msg.method](msg.params)
                         except Exception as e:
                             self.log.info("An exception occured calling {0}: {1}".format(msg.method, e))
-                            response.error = {"code": -32603, "message": "An error occured"}
+                            response.error = exception.exception_to_error(e)
                     else:
                         response.error = {"code": -32601, "message": "No such method {0}".format(msg.method)}
                     
@@ -118,8 +118,6 @@ class ServiceResponder(threading.Thread):
                     self.log.info("Got a message of uknown type")
             except socket.timeout:
                 continue
-            except exception.MessageException:
-                break
             except Exception as e:
                 self.log.info("Client socket exception: {0}".format(e))
                 break
@@ -153,7 +151,7 @@ class SocketProxy(object):
             self.socket = socket.socket(socket.AF_INET, socktype)
             self.socket.connect(('localhost', port))
         except Exception as e:
-            raise exception.ServiceException("Failed to connected to service", e)
+            raise exception.JRPCError("Failed to connected to service", e)
 
     def rpc(self, remote_procedure, args):
         msg = message.Request(self.next_id, remote_procedure)
@@ -162,13 +160,12 @@ class SocketProxy(object):
         msg.serialize(self.socket)
         response = message.deserialize(self.socket)
         if not type(response) is message.Response:
-            raise exception.ServiceException("Received a message of uknown type")
-        if response.id != msg.id: raise exception.ServiceException("Got a response for a different request ID")
+            raise exception.JRPCError("Received a message of uknown type")
+        if response.id != msg.id: raise exception.JRPCError(0, "Got a response for a different request ID")
         if hasattr(response, "result"):
             return response.result
         elif hasattr(response, "error"):
-            ############# TODO: Better exception handling ############
-            raise Exception("JRPC Error {0}".format(response.error))
+            raise exception.JRPCError.from_error(response.error)
         raise Exception("Deserialization failure!!")
 
     def close(self):
@@ -193,9 +190,9 @@ class Proxy(SocketProxy):
         try:
             self.service_port = daemon_proxy.get_service(service_name)
         except socket.error:
-            raise exception.ServiceException("Service {0} isn't running".format(service_name))
+            raise exception.JRPCError("Service {0} isn't running".format(service_name))
         except socket.timeout:
-            raise exception.ServiceException("Service {0} timed out".format(service_name))
+            raise exception.JRPCError("Service {0} timed out".format(service_name))
         except Exception as e:
             raise e
         finally:

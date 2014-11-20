@@ -11,17 +11,17 @@ def deserialize(s):
 
 def __deserializeTCP(s):
     buf = s.recv(4)
-    if not buf: raise exception.MessageException("Client disconnected")
+    if not buf: raise exception.ClientError("Client disconnected")
     size, = struct.unpack("!I", buf)
     try:
         json_str = s.recv(size)
     except socket.timeout:
-        raise exception.MessageException("Timeout receiving message")
+        raise exception.ClientError("Timeout receiving message")
     return fromjson(json_str)
 
 def __deserializeUDP(s):
     buf = s.recv(1500)
-    if not buf: raise exception.MessageException("Client disconnected")
+    if not buf: raise exception.ClientError("Client disconnected")
     size, = struct.unpack("!I", buf[:4])
     return fromjson(buf[4:size+4])
 
@@ -30,7 +30,7 @@ def fromjson(json_str):
     try:
         json_obj = json.loads(json_str)
     except:
-        raise exception.MessageException("Invalid json in message")
+        raise exception.ParseException("Invalid json in message")
     
     if Request.json_obj_is(json_obj):
         return Request.from_json(json_obj)
@@ -74,7 +74,7 @@ class Request(Message):
     @staticmethod
     def from_json(json_obj):
         if not Request.json_obj_is(json_obj):
-            raise exception.MessageException("Message is not a request")
+            raise exception.InvalidReqeust("Message is not a request")
         request = Request(json_obj["id"], json_obj["method"], json_obj["jsonrpc"])
         if "params" in json_obj: request.params = json_obj["params"]
         return request
@@ -89,11 +89,11 @@ class Response(Message):
     @staticmethod
     def from_json(json_obj):
         if not Response.json_obj_is(json_obj):
-            raise exception.MessageException("Message is not a response")
+            raise exception.ParseError("Message is not a response")
         response = Response(json_obj["id"], json_obj["jsonrpc"])
         if "error" in json_obj: response.error = json_obj["error"]
         elif "result" in json_obj: response.result = json_obj["result"]
-        else: raise exception.MessageException("Reponse object does not contain error or result")
+        else: raise exception.ClientError("Reponse object does not contain error or result")
         return response
         
     def __init__(self, id = None, jsonrpc = "2.0"):

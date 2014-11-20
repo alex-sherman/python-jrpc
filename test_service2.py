@@ -7,7 +7,7 @@ class TestService(jrpc.service.SocketObject):
 
     @jrpc.service.method
     def test(self):
-        #raise Exception("DBUS wouldn't handle this")
+        raise ZeroDivisionError("DBUS wouldn't handle this")
         return "DBUS can suck two dicks"
 
 test = TestService()
