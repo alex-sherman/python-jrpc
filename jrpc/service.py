@@ -16,16 +16,14 @@ class method(object):
         if self.instance == None: raise exception.MethodException("Method instance not set before being called")
         return self.remote_func(self.instance, *args)
 
-class Object(threading.Thread):
+class SocketObject(threading.Thread):
     remote_functions = []
-    def __init__(self, service_name, debug = False):
+    def __init__(self, port, debug = False):
         threading.Thread.__init__(self)
         self.log = logging.Logger(debug)
         self.running = True
-        self.service_name = service_name
-        self.name_service_thread = None
         self.registered = False
-        self.port = 0
+        self.port = port
         socket.setdefaulttimeout(1)
         self.responders = []
         self.jbus_methods = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
@@ -40,27 +38,15 @@ class Object(threading.Thread):
         except:
             self.close()
 
-    def register(self):
-        try:
-            daemon_proxy = SocketProxy(50007)
-            daemon_proxy.register_service(self.service_name, self.port)
-            self.registered = True
-        except:
-            self.registered = False
-        if self.registered:
-            self.log.info("Registered service {0} with daemon".format(self.service_name))
-        else:
-            self.log.error("Failed to register service {0} with daemon".format(self.service_name))
-        return self.registered
-
-    def run(self):
+    def pre_run(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.bind(('', self.port))
         self.port = self.s.getsockname()[1]              
         self.s.listen(1)
         self.log.info("Service listening on port {0}".format(self.port))
-        self.name_service_thread = NameServiceResponder(self, self.log)
-        self.name_service_thread.start()
+
+    def run(self):
+        self.pre_run()
         while self.running:
             try:
                 conn, addr = self.s.accept()
@@ -75,10 +61,6 @@ class Object(threading.Thread):
                 self.close()
             
     def close(self):
-        if self.name_service_thread != None:
-            nst = self.name_service_thread
-            self.name_service_thread = None
-            nst.close()
         for responder in self.responders:
             responder.close()
         if not self.running: return
@@ -87,6 +69,25 @@ class Object(threading.Thread):
             self.log.info("Closing socket")
             self.s.close()
             del self.s
+
+class Object(SocketObject):
+    def __init__(self, service_name, debug = False):
+        SocketObject.__init__(self, 0, debug)
+        
+        self.service_name = service_name
+        self.name_service_thread = None
+    def pre_run(self):
+        SocketObject.pre_run(self)
+        self.name_service_thread = NameServiceResponder(self, self.log)
+        self.name_service_thread.start()
+
+    def close(self):
+        if self.name_service_thread != None:
+            nst = self.name_service_thread
+            self.name_service_thread = None
+            nst.close()
+        SocketObject.close(self)
+        
 
 class ServiceResponder(threading.Thread):
     def __init__(self, service_obj, socket, addr, log):
@@ -107,6 +108,7 @@ class ServiceResponder(threading.Thread):
                         try:
                             response.result = self.service_obj.jbus_methods[msg.method](msg.params)
                         except Exception as e:
+                            self.log.info("An exception occured calling {0}: {1}".format(msg.method, e))
                             response.error = {"code": -32603, "message": "An error occured"}
                     else:
                         response.error = {"code": -32601, "message": "No such method {0}".format(msg.method)}

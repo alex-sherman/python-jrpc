@@ -11,7 +11,7 @@ finally:
     del test
 try:
     test = None
-    test = jrpc.service.Proxy("test-service2")
+    test = jrpc.service.SocketProxy(50008)
     print test.test()
 except Exception as e:
     print e
