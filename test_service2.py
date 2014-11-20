@@ -7,6 +7,7 @@ class TestService(jbus.service.Object):
 
     @jbus.service.method
     def test(self):
+        raise Exception("DBUS wouldn't handle this")
         return "DBUS can suck two dicks"
 
 test = TestService()

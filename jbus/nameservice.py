@@ -1,6 +1,7 @@
 import threading, socket
 import json
 import struct
+import message
 
 class NameServiceResponder(threading.Thread):
     def __init__(self, service_obj, log):
@@ -17,11 +18,16 @@ class NameServiceResponder(threading.Thread):
                 data, addr = self.s.recvfrom(1500)
                 sport, dport = struct.unpack("!HH", data[20:24])
                 addr = (addr[0], sport)
-                if dport == 50007 and data[28:] == self.service_obj.service_name:
-                    self.log.info("Got request for this service from {0}".format(addr))
-                    json_str = json.dumps(self.service_obj.port)
-                    tosend = struct.pack("!HHHH{0}s".format(len(json_str)),dport,sport,len(json_str) + 8,0,json_str)
-                    self.s.sendto(tosend, addr)
+                if dport == 50007:
+                    msg = message.Message()
+                    msg.fromdata(data[28:])
+                    if hasattr(msg, "procedure") and hasattr(msg, "args") \
+                        and msg.procedure == "get_service" and msg.args[0] == self.service_obj.service_name:
+                        self.log.info("Got request for this service from {0}".format(addr))
+                        response = message.Message({"status": 200, "data": self.service_obj.port})
+                        res_str = response.todata()
+                        tosend = struct.pack("!HHHH{0}s".format(len(res_str)),dport,sport,len(res_str) + 8,0,res_str)
+                        self.s.sendto(tosend, addr)
             except socket.timeout:
                 continue
             except Exception as e:
