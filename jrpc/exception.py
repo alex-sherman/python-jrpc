@@ -2,18 +2,18 @@ import sys
 
 def _get_closest_exception(inheritance_list):
     for except_type in inheritance_list:
-        if hasattr(sys.modules["__main__"].__builtins__, except_type[1]):
-            return getattr(sys.modules["__main__"].__builtins__, except_type[1])
+        if hasattr(sys.modules["__main__"].__builtins__, except_type["class"]):
+            return getattr(sys.modules["__main__"].__builtins__, except_type["class"])
     return None
 
 
 def _getInheritanceList(exception):
     base = exception.__class__
-    inheritance = [(base.__module__, base.__name__)]
+    inheritance = [{"module":base.__module__, "class":base.__name__}]
     
     while base != BaseException:
         base = base.__bases__[0]
-        inheritance.append((base.__module__, base.__name__))
+        inheritance.append({"module":base.__module__, "class":base.__name__})
     return inheritance
 
 def exception_to_error(exception):
