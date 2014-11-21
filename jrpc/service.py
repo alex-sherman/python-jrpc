@@ -108,7 +108,7 @@ class ServiceResponder(threading.Thread):
                         try:
                             response.result = self.service_obj.jbus_methods[msg.method](msg.params)
                         except Exception as e:
-                            self.log.info("An exception occured calling {0}: {1}".format(msg.method, e))
+                            self.log.info("An exception occured while calling {0}: {1}".format(msg.method, e))
                             response.error = exception.exception_to_error(e)
                     else:
                         response.error = {"code": -32601, "message": "No such method {0}".format(msg.method)}
