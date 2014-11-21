@@ -1,28 +1,28 @@
-def _get_closest_exception(exception_type):
-    current_tree = JRPCError.exception_tree
-    best_guess = None
-    while current_tree:
-        next_guess = [(guess, next_tree) for guess, next_tree in current_tree.iteritems()
-                      if issubclass(exception_type, guess)]
-        if len(next_guess) == 0: return best_guess
-        best_guess = next_guess[0][0]
-        current_tree = next_guess[0][1]
-    if best_guess == None: raise Exception("Cannot serialize exception {0}".format(exception))
-    return best_guess
+import sys
 
-def _get_exception_code(exception_type):
-    best_guess = _get_closest_exception(exception_type)
-    for code, exception_type in JRPCError.base_exception_codes.iteritems():
-        if exception_type is best_guess:
-            return code
-    raise Exception("Missing error code lookup {0}".format(best_guess))
+def _get_closest_exception(inheritance_list):
+    for except_type in inheritance_list:
+        if hasattr(sys.modules["__main__"].__builtins__, except_type[1]):
+            return getattr(sys.modules["__main__"].__builtins__, except_type[1])
+    return None
+
+
+def _getInheritanceList(exception):
+    base = exception.__class__
+    inheritance = [(base.__module__, base.__name__)]
+    
+    while base != BaseException:
+        base = base.__bases__[0]
+        inheritance.append((base.__module__, base.__name__))
+    return inheritance
 
 def exception_to_error(exception):
-    best_guess = None
-    code = _get_exception_code(type(exception))
-    return {"code": code, "message": exception.message, "data": str(type(exception))}
+    code = JRPCError.base_exception_code
+    return {"code": code, "message": exception.message, "data": _getInheritanceList(exception)}
 
 class JRPCError(Exception):
+    base_exception_code = -32000
+
     @staticmethod
     def from_error(error):
         code = error["code"]
@@ -33,8 +33,12 @@ class JRPCError(Exception):
             data = None
         if code in JRPCError.error_codes:
             return JRPCError.error_codes[code](msg, code, data)
-        if code in JRPCError.base_exception_codes:
-            return JRPCError.base_exception_codes[code](msg)
+        elif code <= -32000 and code >= -32099:
+            if code == JRPCError.base_exception_code:
+                exceptType = _get_closest_exception(data)
+                if exceptType != None:
+                    return exceptType(msg)
+            return ServerError(msg, code, data)
         
         return JRPCError(msg, code, data)
         
@@ -67,20 +71,4 @@ class ClientError(JRPCError):
 JRPCError.error_codes = {-32700: ParseError, -32600: InvalidRequest,
                              -32601: MethodNotFound, -32602: InvalidParams,
                              -32603: InternalError}
-JRPCError.base_exception_codes = {-32000: BaseException, -32004: Exception, -32006: StandardError, -32008: ArithmeticError,
-                                  -32011: ZeroDivisionError, -32013: AttributeError, -32015: IOError}
 
-JRPCError.exception_tree = {
-    BaseException:
-    {
-        Exception:
-        {
-            StandardError: {
-                ArithmeticError: {
-                    ZeroDivisionError: {}
-                },
-                AttributeError: {}
-            }
-        }
-    }
-}
