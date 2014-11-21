@@ -1,11 +1,11 @@
 #!/usr/bin/python
-import jbus
+import jrpc
 
-class TestService(jbus.service.Object):
+class TestService(jrpc.service.Object):
     def __init__(self):
-        jbus.service.Object.__init__(self, "test-service", True)
+        jrpc.service.Object.__init__(self, "test-service", True)
 
-    @jbus.service.method
+    @jrpc.service.method
     def test(self):
         return "DBUS can suck a dick"
 

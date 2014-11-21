@@ -1,3 +1,3 @@
 from distutils.core import setup
 
-setup(name = "jbus", version = "0.1", packages = ["jbus"])
+setup(name = "jrpc", version = "1.0", packages = ["jrpc"])

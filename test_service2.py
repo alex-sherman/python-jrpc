@@ -1,13 +1,13 @@
 #!/usr/bin/python
-import jbus
+import jrpc
 
-class TestService(jbus.service.Object):
+class TestService(jrpc.service.SocketObject):
     def __init__(self):
-        jbus.service.Object.__init__(self, "test-service2", True)
+        jrpc.service.SocketObject.__init__(self, 50008, True)
 
-    @jbus.service.method
+    @jrpc.service.method
     def test(self):
-        raise Exception("DBUS wouldn't handle this")
+        raise ZeroDivisionError("DBUS wouldn't handle this")
         return "DBUS can suck two dicks"
 
 test = TestService()

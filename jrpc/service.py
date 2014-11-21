@@ -16,16 +16,14 @@ class method(object):
         if self.instance == None: raise exception.MethodException("Method instance not set before being called")
         return self.remote_func(self.instance, *args)
 
-class Object(threading.Thread):
+class SocketObject(threading.Thread):
     remote_functions = []
-    def __init__(self, service_name, debug = False):
+    def __init__(self, port, debug = False):
         threading.Thread.__init__(self)
         self.log = logging.Logger(debug)
         self.running = True
-        self.service_name = service_name
-        self.name_service_thread = None
         self.registered = False
-        self.port = 0
+        self.port = port
         socket.setdefaulttimeout(1)
         self.responders = []
         self.jbus_methods = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
@@ -40,27 +38,15 @@ class Object(threading.Thread):
         except:
             self.close()
 
-    def register(self):
-        try:
-            daemon_proxy = SocketProxy(50007)
-            daemon_proxy.register_service(self.service_name, self.port)
-            self.registered = True
-        except:
-            self.registered = False
-        if self.registered:
-            self.log.info("Registered service {0} with daemon".format(self.service_name))
-        else:
-            self.log.error("Failed to register service {0} with daemon".format(self.service_name))
-        return self.registered
-
-    def run(self):
+    def pre_run(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.bind(('', self.port))
         self.port = self.s.getsockname()[1]              
         self.s.listen(1)
         self.log.info("Service listening on port {0}".format(self.port))
-        self.name_service_thread = NameServiceResponder(self, self.log)
-        self.name_service_thread.start()
+
+    def run(self):
+        self.pre_run()
         while self.running:
             try:
                 conn, addr = self.s.accept()
@@ -75,10 +61,6 @@ class Object(threading.Thread):
                 self.close()
             
     def close(self):
-        if self.name_service_thread != None:
-            nst = self.name_service_thread
-            self.name_service_thread = None
-            nst.close()
         for responder in self.responders:
             responder.close()
         if not self.running: return
@@ -87,6 +69,25 @@ class Object(threading.Thread):
             self.log.info("Closing socket")
             self.s.close()
             del self.s
+
+class Object(SocketObject):
+    def __init__(self, service_name, debug = False):
+        SocketObject.__init__(self, 0, debug)
+        
+        self.service_name = service_name
+        self.name_service_thread = None
+    def pre_run(self):
+        SocketObject.pre_run(self)
+        self.name_service_thread = NameServiceResponder(self, self.log)
+        self.name_service_thread.start()
+
+    def close(self):
+        if self.name_service_thread != None:
+            nst = self.name_service_thread
+            self.name_service_thread = None
+            nst.close()
+        SocketObject.close(self)
+        
 
 class ServiceResponder(threading.Thread):
     def __init__(self, service_obj, socket, addr, log):
@@ -101,22 +102,22 @@ class ServiceResponder(threading.Thread):
         while self.running:
             try:
                 msg = message.deserialize(self.socket)
-                response = message.Message({})
-                if msg.obj["procedure"] in self.service_obj.jbus_methods:
-                    try:
-                        response.obj["data"] = self.service_obj.jbus_methods[msg.obj["procedure"]](msg.obj["args"])
-                        response.obj["status"] = 200
-                    except Exception as e:
-                        response.obj["status"] = 500
-                        response.obj["data"] = (str(type(e)), e.message)
+                if type(msg) is message.Request:
+                    response = message.Response(msg.id)
+                    if msg.method in self.service_obj.jbus_methods:
+                        try:
+                            response.result = self.service_obj.jbus_methods[msg.method](msg.params)
+                        except Exception as e:
+                            self.log.info("An exception occured calling {0}: {1}".format(msg.method, e))
+                            response.error = exception.exception_to_error(e)
+                    else:
+                        response.error = {"code": -32601, "message": "No such method {0}".format(msg.method)}
+                    
+                    response.serialize(self.socket)
                 else:
-                    response.obj["status"] = 404
-                
-                response.serialize(self.socket)
+                    self.log.info("Got a message of uknown type")
             except socket.timeout:
                 continue
-            except exception.MessageException:
-                break
             except Exception as e:
                 self.log.info("Client socket exception: {0}".format(e))
                 break
@@ -145,25 +146,27 @@ class SocketProxy(object):
     def __init__(self, port, socktype = socket.SOCK_STREAM):
         socket.setdefaulttimeout(1)
         self.socket = None
+        self.next_id = 1
         try:
             self.socket = socket.socket(socket.AF_INET, socktype)
             self.socket.connect(('localhost', port))
         except Exception as e:
-            raise exception.ServiceException("Failed to connected to service", e)
+            raise exception.JRPCError("Failed to connected to service", e)
 
     def rpc(self, remote_procedure, args):
-        msg = message.Message({"procedure": remote_procedure, "args": args})
+        msg = message.Request(self.next_id, remote_procedure)
+        self.next_id += 1
+        msg.params = args
         msg.serialize(self.socket)
         response = message.deserialize(self.socket)
-        status = response.status
-        if status == 200:
-            return response.data
-        if status == 404:
-            raise exception.ServiceException("No such method {0}".format(remote_procedure), AttributeError)
-        if status == 500:
-            raise exception.ServiceException("An exception occured of type {0} with message: {1}"
-                                             .format(response.data[0], response.data[1]), Exception)
-        return response.obj["data"]
+        if not type(response) is message.Response:
+            raise exception.JRPCError("Received a message of uknown type")
+        if response.id != msg.id: raise exception.JRPCError(0, "Got a response for a different request ID")
+        if hasattr(response, "result"):
+            return response.result
+        elif hasattr(response, "error"):
+            raise exception.JRPCError.from_error(response.error)
+        raise Exception("Deserialization failure!!")
 
     def close(self):
         if self.socket != None:
@@ -187,9 +190,9 @@ class Proxy(SocketProxy):
         try:
             self.service_port = daemon_proxy.get_service(service_name)
         except socket.error:
-            raise exception.ServiceException("Service {0} isn't running".format(service_name))
+            raise exception.JRPCError("Service {0} isn't running".format(service_name))
         except socket.timeout:
-            raise exception.ServiceException("Service {0} timed out".format(service_name))
+            raise exception.JRPCError("Service {0} timed out".format(service_name))
         except Exception as e:
             raise e
         finally:
