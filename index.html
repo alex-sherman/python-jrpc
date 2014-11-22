@@ -1,0 +1,102 @@
+<!doctype html>
+<!-- The Time Machine GitHub pages theme was designed and developed by Jon Rohan, on Feb 7, 2012. -->
+<!-- Follow him for fun. http://twitter.com/jonrohan. Tail his code on http://github.com/jonrohan -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <link rel="stylesheet" href="stylesheets/stylesheet.css" media="screen">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/script.js"></script>
+
+  <title>Python-jrpc</title>
+  <meta name="description" content="A Python remote procedure call framework that uses JSON RPC v2.0">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <header>
+      <h1 class="title">Python-jrpc</h1>
+    </header>
+    <div id="container">
+      <p class="tagline">A Python remote procedure call framework that uses JSON RPC v2.0</p>
+      <div id="main" role="main">
+        <div class="download-bar">
+        <div class="inner">
+          <a href="https://github.com/alex-sherman/python-jrpc/tarball/master" class="download-button tar"><span>Download</span></a>
+          <a href="https://github.com/alex-sherman/python-jrpc/zipball/master" class="download-button zip"><span>Download</span></a>
+          <a href="https://github.com/alex-sherman/python-jrpc" class="code">View Python-jrpc on GitHub</a>
+        </div>
+        <span class="blc"></span><span class="trc"></span>
+        </div>
+        <article class="markdown-body">
+          <h1>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
+
+<p>Python-JRPC allows programmers to create powerful client/server programs with very little code.
+Here's an example of a server and client:</p>
+
+<h2>
+<a id="server" class="anchor" href="#server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Server</h2>
+
+<div class="highlight highlight-python"><pre><span class="pl-k">import</span> jrpc
+
+<span class="pl-st">class</span> <span class="pl-en">SimpleService</span>(<span class="pl-e">jrpc.service.SocketObject</span>):
+    <span class="pl-en">@jrpc.service.method</span>
+    <span class="pl-st">def</span> <span class="pl-en">echo</span>(<span class="pl-vpf">self</span>, <span class="pl-vpf">msg</span>):
+        <span class="pl-k">return</span> msg
+
+server <span class="pl-k">=</span> SimpleService(<span class="pl-c1">50001</span>) <span class="pl-c">#Include the listening port</span>
+server.run_wait()</pre></div>
+
+<h2>
+<a id="client" class="anchor" href="#client" aria-hidden="true"><span class="octicon octicon-link"></span></a>Client</h2>
+
+<div class="highlight highlight-python"><pre><span class="pl-k">import</span> jrpc
+
+server <span class="pl-k">=</span> <span class="pl-c1">None</span>
+server <span class="pl-k">=</span> jrpc.service.SocketProxy(<span class="pl-c1">50001</span>) <span class="pl-c">#The server's listening port</span>
+<span class="pl-k">print</span> server.echo(<span class="pl-s1"><span class="pl-pds">"</span>Hello World!<span class="pl-pds">"</span></span>)</pre></div>
+
+<h1>
+<a id="why-use-it" class="anchor" href="#why-use-it" aria-hidden="true"><span class="octicon octicon-link"></span></a>Why Use It?</h1>
+
+<p>Python-JRPC takes all of the boiler-plate code out of your network applications.
+Forget reading through socket documentation and developing your own message formats.
+All you need to do is write your Python server/client logic and let Python-JRPC handle the networking for you.
+Here's what you get:</p>
+
+<ul>
+<li>Remote method call with JSON serializable parameters/return values</li>
+<li>Synchronization/thread safety in servers/clients</li>
+<li>Remote exception passing (When calling a remote method in a client, exceptions thrown by the server code will be thrown locally!)</li>
+</ul>
+        </article>
+      </div>
+    </div>
+    <footer>
+      <div class="owner">
+      <p><a href="https://github.com/alex-sherman" class="avatar"><img src="https://avatars3.githubusercontent.com/u/9901978?v=3&amp;s=60" width="48" height="48"></a> <a href="https://github.com/alex-sherman">alex-sherman</a> maintains <a href="https://github.com/alex-sherman/python-jrpc">Python-jrpc</a></p>
+
+
+      </div>
+      <div class="creds">
+        <small>This page generated using <a href="http://pages.github.com/">GitHub Pages</a><br>theme by <a href="https://twitter.com/jonrohan/">Jon Rohan</a></small>
+      </div>
+    </footer>
+  </div>
+  <div class="current-section">
+    <a href="#top">Scroll to top</a>
+    <a href="https://github.com/alex-sherman/python-jrpc/tarball/master" class="tar">tar</a><a href="https://github.com/alex-sherman/python-jrpc/zipball/master" class="zip">zip</a><a href="" class="code">source code</a>
+    <p class="name"></p>
+  </div>
+
+  
+</body>
+</html>
