@@ -1,13 +1,10 @@
 #!/usr/bin/python
 import jrpc
 
-class TestService(jrpc.service.Object):
-    def __init__(self):
-        jrpc.service.Object.__init__(self, "test-service", True)
-
+class EchoService(jrpc.service.SocketObject):
     @jrpc.service.method
-    def test(self):
-        return "DBUS can suck a dick"
+    def echo(self, msg):
+        return msg
 
-test = TestService()
+test = EchoService(50009, debug = True)
 test.run_wait()

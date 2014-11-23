@@ -2,14 +2,9 @@
 import jrpc
 
 class TestService(jrpc.service.SocketObject):
-    def __init__(self):
-        jrpc.service.SocketObject.__init__(self, 50008, True)
-
     @jrpc.service.method
     def test(self):
-        raise ZeroDivisionError("DBUS wouldn't handle this")
-        return "DBUS can suck two dicks"
+        raise ZeroDivisionError("This will get thrown on the client if it calls this method")
 
-test = TestService()
+test = TestService(50008, debug = True)
 test.run_wait()
-
