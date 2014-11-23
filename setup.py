@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-  name = "jrpc",
+  name = "python-jrpc",
   version = "1.0",
   packages = ["jrpc"],
   author='Alex Sherman',
