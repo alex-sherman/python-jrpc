@@ -20,6 +20,7 @@ class SocketObject(threading.Thread):
     remote_functions = []
     def __init__(self, port, debug = False):
         threading.Thread.__init__(self)
+        self.lock = threading.Lock()
         self.log = logging.Logger(debug)
         self.running = True
         self.registered = False
@@ -105,11 +106,14 @@ class ServiceResponder(threading.Thread):
                 if type(msg) is message.Request:
                     response = message.Response(msg.id)
                     if msg.method in self.service_obj.jbus_methods:
+                        self.service_obj.lock.acquire()
                         try:
                             response.result = self.service_obj.jbus_methods[msg.method](msg.params)
                         except Exception as e:
                             self.log.info("An exception occured while calling {0}: {1}".format(msg.method, e))
                             response.error = exception.exception_to_error(e)
+                        finally:
+                            self.service_obj.lock.release()
                     else:
                         response.error = {"code": -32601, "message": "No such method {0}".format(msg.method)}
                     
@@ -147,6 +151,7 @@ class SocketProxy(object):
         socket.setdefaulttimeout(1)
         self.socket = None
         self.next_id = 1
+        self.lock = threading.Lock()
         try:
             self.socket = socket.socket(socket.AF_INET, socktype)
             self.socket.connect(('localhost', port))
@@ -154,19 +159,23 @@ class SocketProxy(object):
             raise exception.JRPCError("Failed to connected to service", e)
 
     def rpc(self, remote_procedure, args):
-        msg = message.Request(self.next_id, remote_procedure)
-        self.next_id += 1
-        msg.params = args
-        msg.serialize(self.socket)
-        response = message.deserialize(self.socket)
-        if not type(response) is message.Response:
-            raise exception.JRPCError("Received a message of uknown type")
-        if response.id != msg.id: raise exception.JRPCError(0, "Got a response for a different request ID")
-        if hasattr(response, "result"):
-            return response.result
-        elif hasattr(response, "error"):
-            raise exception.JRPCError.from_error(response.error)
-        raise Exception("Deserialization failure!!")
+        self.lock.acquire()
+        try:
+            msg = message.Request(self.next_id, remote_procedure)
+            self.next_id += 1
+            msg.params = args
+            msg.serialize(self.socket)
+            response = message.deserialize(self.socket)
+            if not type(response) is message.Response:
+                raise exception.JRPCError("Received a message of uknown type")
+            if response.id != msg.id: raise exception.JRPCError(0, "Got a response for a different request ID")
+            if hasattr(response, "result"):
+                return response.result
+            elif hasattr(response, "error"):
+                raise exception.JRPCError.from_error(response.error)
+            raise Exception("Deserialization failure!!")
+        finally:
+            self.lock.release()
 
     def close(self):
         if self.socket != None:
