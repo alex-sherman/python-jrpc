@@ -3,6 +3,12 @@ Python-JRPC
 
 A Python remote procedure call framework that uses JSON RPC v2.0
 
+Install using pip:
+
+```
+pip install python-jrpc
+```
+
 # Usage
 
 Python-JRPC allows programmers to create powerful client/server programs with very little code.
