@@ -1,10 +1,10 @@
 #!/usr/bin/python
 import jrpc
 
-class TestService(jrpc.service.SocketObject):
+class ExceptionService(jrpc.service.SocketObject):
     @jrpc.service.method
-    def test(self):
+    def echo(self, msg):
         raise ZeroDivisionError("This will get thrown on the client if it calls this method")
 
-test = TestService(50008, debug = True)
+test = TestService(50001, debug = True)
 test.run_wait()

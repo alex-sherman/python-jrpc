@@ -90,6 +90,7 @@ class ServiceResponder(threading.Thread):
                         self.service_obj.lock.acquire()
                         try:
                             response.result = self.service_obj.jbus_methods[msg.method](msg.params)
+                            self.log.info("{0} called \"{1}\" returning {2}".format(self.addr, msg.method, json.dumps(response.result)))
                         except Exception as e:
                             self.log.info("An exception occured while calling {0}: {1}".format(msg.method, e))
                             response.error = exception.exception_to_error(e)
