@@ -18,7 +18,7 @@ def _getInheritanceList(exception):
 
 def exception_to_error(exception):
     code = JRPCError.base_exception_code
-    return {"code": code, "message": exception.message, "data": _getInheritanceList(exception)}
+    return {"code": code, "message": str(exception), "data": {"classes": _getInheritanceList(exception), "args": exception.args}}
 
 class JRPCError(Exception):
     base_exception_code = -32000
@@ -35,9 +35,10 @@ class JRPCError(Exception):
             return JRPCError.error_codes[code](msg, code, data)
         elif code <= -32000 and code >= -32099:
             if code == JRPCError.base_exception_code:
-                exceptType = _get_closest_exception(data)
-                if exceptType != None:
-                    return exceptType(msg)
+                if data != None and "classes" in data and "args" in data:
+                    exceptType = _get_closest_exception(data["classes"])
+                    if exceptType != None:
+                        return exceptType(*data["args"])
             return ServerError(msg, code, data)
         
         return JRPCError(msg, code, data)
