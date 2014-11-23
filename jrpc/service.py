@@ -6,7 +6,6 @@ import exception
 import json
 import message
 import inspect
-from nameservice import NameServiceResponder
 
 class method(object):
     def __init__(self, remote_func):
@@ -18,13 +17,14 @@ class method(object):
 
 class SocketObject(threading.Thread):
     remote_functions = []
-    def __init__(self, port, debug = False):
+    def __init__(self, port, host = '', debug = False):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
         self.log = logging.Logger(debug)
         self.running = True
         self.registered = False
         self.port = port
+        self.host = host
         socket.setdefaulttimeout(1)
         self.responders = []
         self.jbus_methods = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
@@ -41,7 +41,7 @@ class SocketObject(threading.Thread):
 
     def pre_run(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.bind(('', self.port))
+        self.s.bind((self.host, self.port))
         self.port = self.s.getsockname()[1]              
         self.s.listen(1)
         self.log.info("Service listening on port {0}".format(self.port))
@@ -70,25 +70,6 @@ class SocketObject(threading.Thread):
             self.log.info("Closing socket")
             self.s.close()
             del self.s
-
-class Object(SocketObject):
-    def __init__(self, service_name, debug = False):
-        SocketObject.__init__(self, 0, debug)
-        
-        self.service_name = service_name
-        self.name_service_thread = None
-    def pre_run(self):
-        SocketObject.pre_run(self)
-        self.name_service_thread = NameServiceResponder(self, self.log)
-        self.name_service_thread.start()
-
-    def close(self):
-        if self.name_service_thread != None:
-            nst = self.name_service_thread
-            self.name_service_thread = None
-            nst.close()
-        SocketObject.close(self)
-        
 
 class ServiceResponder(threading.Thread):
     def __init__(self, service_obj, socket, addr, log):
@@ -147,14 +128,16 @@ class CallBack(object):
         return self.proxy.rpc(self.procedure_name, args)
 
 class SocketProxy(object):
-    def __init__(self, port, socktype = socket.SOCK_STREAM):
+    def __init__(self, port, host = 'localhost', socktype = socket.SOCK_STREAM):
         socket.setdefaulttimeout(1)
         self.socket = None
         self.next_id = 1
         self.lock = threading.Lock()
+        self.host = host
+        self.port = port
         try:
             self.socket = socket.socket(socket.AF_INET, socktype)
-            self.socket.connect(('localhost', port))
+            self.socket.connect((host, port))
         except Exception as e:
             raise exception.JRPCError("Failed to connected to service", e)
 
@@ -188,24 +171,3 @@ class SocketProxy(object):
         
     def __getattr__(self, name):
         return CallBack(name, self)
-
-class Proxy(SocketProxy):
-    def __init__(self, service_name):
-        socket.setdefaulttimeout(1)
-        self.service_name = service_name
-        self.socket = None
-        
-        daemon_proxy = SocketProxy(50007, socket.SOCK_DGRAM)
-        try:
-            self.service_port = daemon_proxy.get_service(service_name)
-        except socket.error:
-            raise exception.JRPCError("Service {0} isn't running".format(service_name))
-        except socket.timeout:
-            raise exception.JRPCError("Service {0} timed out".format(service_name))
-        except Exception as e:
-            raise e
-        finally:
-            daemon_proxy.close()
-        SocketProxy.__init__(self, self.service_port)
-        
-        
