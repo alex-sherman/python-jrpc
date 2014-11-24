@@ -4,7 +4,7 @@ def _get_closest_exception(inheritance_list):
     for except_type in inheritance_list:
         if hasattr(sys.modules["__main__"].__builtins__, except_type["class"]):
             closest_exception = getattr(sys.modules["__main__"].__builtins__, except_type["class"])
-            if issubclass(type(closest_exception), BaseException):
+            if issubclass(closest_exception, BaseException):
               return closest_exception
     return None
 
