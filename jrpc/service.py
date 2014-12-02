@@ -21,7 +21,7 @@ class SocketObject(threading.Thread):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
         self.log = logging.Logger(debug)
-        self.running = True
+        self.running = False
         self.registered = False
         self.port = port
         self.host = host
@@ -32,11 +32,13 @@ class SocketObject(threading.Thread):
             jbus_method.instance = self
 
     def run_wait(self):
-        self.start()
         try:
+            self.pre_run()
+            self.running = True
+            self.start()
             while self.running:
                 time.sleep(1)
-        except:
+        finally:
             self.close()
 
     def pre_run(self):
@@ -47,7 +49,6 @@ class SocketObject(threading.Thread):
         self.log.info("Service listening on port {0}".format(self.port))
 
     def run(self):
-        self.pre_run()
         while self.running:
             try:
                 conn, addr = self.s.accept()
