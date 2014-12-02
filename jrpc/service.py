@@ -136,11 +136,12 @@ class SocketProxy(object):
         self.lock = threading.Lock()
         self.host = host
         self.port = port
+        self.socket = socket.socket(socket.AF_INET, socktype)
         try:
-            self.socket = socket.socket(socket.AF_INET, socktype)
             self.socket.connect((host, port))
-        except Exception as e:
-            raise exception.JRPCError("Failed to connected to service", e)
+        except socket.error as e:
+            if e.args[0] != 111:
+                raise exception.JRPCError("An error occured", e)
 
     def rpc(self, remote_procedure, args):
         self.lock.acquire()
@@ -148,7 +149,20 @@ class SocketProxy(object):
             msg = message.Request(self.next_id, remote_procedure)
             self.next_id += 1
             msg.params = args
-            msg.serialize(self.socket)
+
+            # Attempt sending and connection if neccessary
+            try:
+                msg.serialize(self.socket)
+            except socket.error as e:
+                # Connection error, try to connect and send
+                if e.args[0] == 32:
+                    try:
+                        self.socket.connect((self.host, self.port))
+                        msg.serialize(self.socket)
+                    except socket.error as e:
+                        raise exception.JRPCError("Unable to connect to remote service", e)
+                else: raise e
+
             response = message.deserialize(self.socket)
             if not type(response) is message.Response:
                 raise exception.JRPCError("Received a message of uknown type")
