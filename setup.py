@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
   name = "python-jrpc",
-  version = "1.1.1",
+  version = "1.1.2",
   description = "A Python remote procedure call framework that uses JSON RPC v2.0",
   packages = ["jrpc"],
   author='Alex Sherman',
