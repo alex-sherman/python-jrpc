@@ -15,8 +15,6 @@ int serialize_message(json_object * jobj, char * buffer, int size)
     return jlength + 4;
 }
 
-
-
 json_object *read_message(int sockfd)
 {
     char buffer[4097];
