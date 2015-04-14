@@ -3,4 +3,6 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 *.a
-test
+*.so
+test_proxy
+test_server
