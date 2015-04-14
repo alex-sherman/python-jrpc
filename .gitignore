@@ -6,3 +6,4 @@ Makefile
 *.so
 test_proxy
 test_server
+install_manifest.txt

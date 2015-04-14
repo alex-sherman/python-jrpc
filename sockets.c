@@ -26,7 +26,7 @@ const static struct addrinfo build_sockaddr_hints_fallback = {
     .ai_flags = AI_NUMERICSERV | AI_V4MAPPED,
 };
 
-int build_sockaddr(const char* ip, unsigned short port, struct sockaddr_storage* dest)
+int jrpc_build_sockaddr(const char* ip, unsigned short port, struct sockaddr_storage* dest)
 {
     assert(ip && dest);
 
@@ -75,7 +75,7 @@ int build_sockaddr(const char* ip, unsigned short port, struct sockaddr_storage*
  * local_port should be in host byte order.
  * Returns a valid socket file descriptor or -1 on failure.
  */
-int tcp_passive_open(unsigned short local_port, int backlog)
+int jrpc_tcp_passive_open(unsigned short local_port, int backlog)
 {
     int sockfd = -1;
 
@@ -166,7 +166,7 @@ int set_nonblock(int sockfd, int enable)
     return 0;
 }
 
-extern int tcp_active_open(struct sockaddr_storage* dest, const char *device, struct timeval *timeout)
+extern int jrpc_tcp_active_open(struct sockaddr_storage* dest, const char *device, struct timeval *timeout)
 {
     int sockfd;
     int rtn;
@@ -219,7 +219,7 @@ free_and_return:
 }
 
 
-int read_from_socket(int sockfd, char *buffer, int size)
+int jrpc_read_from_socket(int sockfd, char *buffer, int size)
 {
     int bytes_read = 0;
     int ret;

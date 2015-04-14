@@ -14,5 +14,10 @@ add_library(jrpc SHARED
     jrpc_server.c
     message.c
 )
-
+target_include_directories (jrpc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+install (FILES jrpc.h DESTINATION include)
 target_link_libraries(jrpc json)
+
+install (TARGETS jrpc
+         ARCHIVE DESTINATION lib
+         LIBRARY DESTINATION lib)

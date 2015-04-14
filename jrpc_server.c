@@ -9,7 +9,7 @@
 struct jrpc_server *jrpc_server_init(uint16_t port)
 {
     struct jrpc_server * server = malloc(sizeof(struct jrpc_server));
-    server->listen_sockfd = tcp_passive_open(port, 0);
+    server->listen_sockfd = jrpc_tcp_passive_open(port, 0);
     server->client_sockfd = 0;
     server->running = 0;
     server->methods = NULL;
@@ -56,7 +56,7 @@ void jrpc_server_run(struct jrpc_server * server)
             {
                 if(FD_ISSET(server->client_sockfd, &read_set))
                 {
-                    json_object *message = read_message(server->client_sockfd);
+                    json_object *message = jrpc_read_message(server->client_sockfd);
                     json_object *obj;
                     const char *method_name;
                     if(!json_object_object_get_ex(message, "method", &obj))
@@ -74,7 +74,7 @@ void jrpc_server_run(struct jrpc_server * server)
                         json_object_object_add(response_message, "result", obj);
 
                         char buffer[1024];
-                        serialize_message(response_message, buffer, sizeof(buffer));
+                        jrpc_serialize_message(response_message, buffer, sizeof(buffer));
                         write(server->client_sockfd, buffer, sizeof(buffer));
                     }
                     else
@@ -87,7 +87,6 @@ client_error:
                 }
             }
             else if(FD_ISSET(server->listen_sockfd, &read_set)) {
-                DEBUG_MSG("Responding to client");
 
                 struct sockaddr addr;
                 socklen_t addr_size = sizeof(addr);
