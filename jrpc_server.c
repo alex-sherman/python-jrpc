@@ -70,7 +70,6 @@ void jrpc_server_run(struct jrpc_server * server)
                         goto client_error;
                     struct jrpc_server_method *method;
                     HASH_FIND_STR(server->methods, method_name, method);
-                    DEBUG_MSG("Calling %s", method_name);
                     if(method != NULL)
                     {
                         json_object *response_message = jrpc_init_message(request_id);
@@ -80,7 +79,6 @@ void jrpc_server_run(struct jrpc_server * server)
 
                         char buffer[1024];
                         int size = jrpc_serialize_message(response_message, buffer, sizeof(buffer));
-                        DEBUG_MSG("Writing to socket")
                         write(server->client_sockfd, buffer, size);
                         continue;
                     }
