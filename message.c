@@ -6,6 +6,16 @@
 
 #include "sockets.h"
 
+json_object *jrpc_init_message(int id)
+{
+    json_object *output = json_object_new_object();
+    json_object *j_id = json_object_new_int(id);
+    json_object *jsonrpc = json_object_new_string("2.0");
+    json_object_object_add(output, "id", j_id);
+    json_object_object_add(output, "jsonrpc", jsonrpc);
+    return output;
+}
+
 int jrpc_serialize_message(json_object * jobj, char * buffer, int size)
 {
     const char * jstr = json_object_to_json_string(jobj);

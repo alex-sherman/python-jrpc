@@ -59,23 +59,30 @@ void jrpc_server_run(struct jrpc_server * server)
                     json_object *message = jrpc_read_message(server->client_sockfd);
                     json_object *obj;
                     const char *method_name;
+                    int request_id;
                     if(!json_object_object_get_ex(message, "method", &obj))
                         goto client_error;
                     method_name = json_object_get_string(obj);
+                    if(!json_object_object_get_ex(message, "id", &obj))
+                        goto client_error;
+                    request_id = json_object_get_int(obj);
                     if(!json_object_object_get_ex(message, "params", &obj))
                         goto client_error;
                     struct jrpc_server_method *method;
                     HASH_FIND_STR(server->methods, method_name, method);
+                    DEBUG_MSG("Calling %s", method_name);
                     if(method != NULL)
                     {
-                        json_object *response_message = json_object_new_object();
+                        json_object *response_message = jrpc_init_message(request_id);
 
                         obj = method->function(obj);
                         json_object_object_add(response_message, "result", obj);
 
                         char buffer[1024];
-                        jrpc_serialize_message(response_message, buffer, sizeof(buffer));
-                        write(server->client_sockfd, buffer, sizeof(buffer));
+                        int size = jrpc_serialize_message(response_message, buffer, sizeof(buffer));
+                        DEBUG_MSG("Writing to socket")
+                        write(server->client_sockfd, buffer, size);
+                        continue;
                     }
                     else
                     {

@@ -28,7 +28,7 @@ typedef json_object *(*jrpc_function)(json_object *);
 
 struct jrpc_server_method
 {
-    char name[10];
+    char name[128];
     jrpc_function function;
     UT_hash_handle hh;
 };
