@@ -30,7 +30,7 @@ def fromjson(json_str):
     try:
         json_obj = json.loads(json_str)
     except:
-        raise exception.ParseException("Invalid json in message")
+        raise exception.ParseError("Invalid json in message: "+json_str)
     
     if Request.json_obj_is(json_obj):
         return Request.from_json(json_obj)
