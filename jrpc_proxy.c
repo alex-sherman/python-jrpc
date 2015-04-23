@@ -70,10 +70,8 @@ int jrpc_proxy_call(struct jrpc_proxy *proxy, const char *method_name, const cha
 
     //TODO: Handle malformed parmeters
     json_object_object_add(request, "params", parameters);
-    char buffer[4096];
-    int length = jrpc_serialize_message(request, buffer, 4096);
+    jrpc_message_send(proxy->sockfd, request);
     json_object_put(request);
-    write(proxy->sockfd, buffer, length);
     json_object *response = jrpc_read_message(proxy->sockfd);
     if(json_object_object_get_ex(response, "result", &proxy->result))
     {

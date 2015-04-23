@@ -5,6 +5,8 @@
 #include <arpa/inet.h>
 
 #include "sockets.h"
+#include "debug.h"
+#include <unistd.h>
 
 json_object *jrpc_init_message(int id)
 {
@@ -16,21 +18,35 @@ json_object *jrpc_init_message(int id)
     return output;
 }
 
-int jrpc_serialize_message(json_object * jobj, char * buffer, int size)
+int jrpc_message_send(int sockfd, json_object * jobj)
 {
+    int rtn = 0;
     const char * jstr = json_object_to_json_string(jobj);
-    int jlength = strnlen(jstr, size);
-    *(int *)buffer = htonl(jlength);
-    memcpy(&buffer[4], jstr, jlength);
-    return jlength + 4;
+    uint32_t jlength = strlen(jstr);
+    uint32_t n_jlength = htonl(jlength);
+    if(write(sockfd, &n_jlength, sizeof(n_jlength)) < sizeof(n_jlength))
+    {
+        rtn = -1;
+        goto free_return;
+    }
+    if(write(sockfd, jstr, jlength) < jlength)
+    {
+        rtn = -1;
+    }
+
+free_return:
+    if(rtn == -1)
+        ERROR_MSG("Message send");
+    return rtn;
 }
 
 json_object *jrpc_read_message(int sockfd)
 {
-    char buffer[4097];
-    jrpc_read_from_socket(sockfd, buffer, 4);
-    int jlength = ntohl(*(int *)buffer);
-    memset(buffer, 0, 4097);
+    uint32_t jlength;
+    jrpc_read_from_socket(sockfd, (char *)&jlength, sizeof(jlength));
+    jlength = ntohl(jlength);
+    char buffer[jlength + +1];
+    memset(buffer, 0, jlength + 1);
     jrpc_read_from_socket(sockfd, buffer, jlength);
     json_object * response = json_tokener_parse(buffer);
     return response;

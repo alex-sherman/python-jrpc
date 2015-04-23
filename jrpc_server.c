@@ -77,9 +77,8 @@ void jrpc_server_run(struct jrpc_server * server)
                         obj = method->function(obj);
                         json_object_object_add(response_message, "result", obj);
 
-                        char buffer[1024];
-                        int size = jrpc_serialize_message(response_message, buffer, sizeof(buffer));
-                        write(server->client_sockfd, buffer, size);
+                        jrpc_message_send(server->client_sockfd, response_message);
+                        json_object_put(response_message);
                         continue;
                     }
                     else
