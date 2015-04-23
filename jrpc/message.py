@@ -12,9 +12,12 @@ def deserialize(s):
 def __deserializeTCP(s):
     buf = s.recv(4)
     if not buf: raise exception.ClientError("Client disconnected")
-    size, = struct.unpack("!I", buf)
+    size, = struct.unpack("I", buf)
+    size = socket.ntohl(size)
     try:
-        json_str = s.recv(size)
+        json_str = ""
+        while len(json_str) < size:
+            json_str += s.recv(size - len(json_str))
     except socket.timeout:
         raise exception.ClientError("Timeout receiving message")
     return fromjson(json_str)
@@ -23,6 +26,7 @@ def __deserializeUDP(s):
     buf = s.recv(1500)
     if not buf: raise exception.ClientError("Client disconnected")
     size, = struct.unpack("!I", buf[:4])
+    size = socket.ntohl(size)
     return fromjson(buf[4:size+4])
 
 def fromjson(json_str):
