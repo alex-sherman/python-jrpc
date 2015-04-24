@@ -17,7 +17,7 @@ class method(object):
 
 class SocketObject(threading.Thread):
     remote_functions = []
-    def __init__(self, port, host = '', debug = False):
+    def __init__(self, port, host = '', debug = False, timeout = 1):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
         self.log = logging.Logger(debug)
@@ -25,7 +25,7 @@ class SocketObject(threading.Thread):
         self.registered = False
         self.port = port
         self.host = host
-        socket.setdefaulttimeout(1)
+        socket.setdefaulttimeout(timeout)
         self.responders = []
         self.jbus_methods = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
         for jbus_method in self.jbus_methods.values():
@@ -130,8 +130,8 @@ class CallBack(object):
         return self.proxy.rpc(self.procedure_name, args)
 
 class SocketProxy(object):
-    def __init__(self, port, host = 'localhost', socktype = socket.SOCK_STREAM):
-        socket.setdefaulttimeout(1)
+    def __init__(self, port, host = 'localhost', socktype = socket.SOCK_STREAM, timeout = 1):
+        socket.setdefaulttimeout(timeout)
         self.socket = None
         self.next_id = 1
         self.lock = threading.Lock()
