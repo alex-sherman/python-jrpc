@@ -17,7 +17,7 @@ class method(object):
 
 class SocketObject(threading.Thread):
     remote_functions = []
-    def __init__(self, port, host = '', debug = False, timeout = 1):
+    def __init__(self, port, host = '', debug = False, timeout = 1, reuseaddr = True):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
         self.log = logging.Logger(debug)
@@ -25,6 +25,7 @@ class SocketObject(threading.Thread):
         self.registered = False
         self.port = port
         self.host = host
+        self.reuseaddr = reuseaddr
         socket.setdefaulttimeout(timeout)
         self.responders = []
         self.jbus_methods = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
@@ -43,6 +44,8 @@ class SocketObject(threading.Thread):
 
     def pre_run(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if self.reuseaddr:
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.host, self.port))
         self.port = self.s.getsockname()[1]              
         self.s.listen(1)
