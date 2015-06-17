@@ -11,9 +11,9 @@ class method(object):
     def __init__(self, remote_func):
         self.remote_func = remote_func
         self.instance = None
-    def __call__(self, args):
+    def __call__(self, params):
         if self.instance == None: raise exception.MethodException("Method instance not set before being called")
-        return self.remote_func(self.instance, *args)
+        return self.remote_func(self.instance, *params[0], **params[1])
 
 class SocketObject(threading.Thread):
     remote_functions = []
@@ -129,8 +129,10 @@ class CallBack(object):
     def __init__(self, procedure_name, proxy):
         self.proxy = proxy
         self.procedure_name = procedure_name
-    def __call__(self, *args):
-        return self.proxy.rpc(self.procedure_name, args)
+    def __getattr__(self, name):
+        return CallBack(self.procedure_name + "." + name, self.proxy)
+    def __call__(self, *args, **kwargs):
+        return self.proxy.rpc(self.procedure_name, args, kwargs)
 
 class SocketProxy(object):
     def __init__(self, port, host = 'localhost', socktype = socket.SOCK_STREAM, timeout = 1):
@@ -147,12 +149,12 @@ class SocketProxy(object):
             if e.args[0] != 111:
                 raise exception.JRPCError("An error occured", e)
 
-    def rpc(self, remote_procedure, args):
+    def rpc(self, remote_procedure, args, kwargs):
         self.lock.acquire()
         try:
             msg = message.Request(self.next_id, remote_procedure)
             self.next_id += 1
-            msg.params = args
+            msg.params = [args, kwargs]
 
             # Attempt sending and connection if neccessary
             try:
@@ -180,7 +182,7 @@ class SocketProxy(object):
             self.lock.release()
 
     def close(self):
-        if self.socket != None:
+        if "socket" in self.__dict__ and self.socket != None:
             self.socket.close()
         self.socket = None
         
