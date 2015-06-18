@@ -6,5 +6,6 @@ class ExceptionService(jrpc.service.SocketObject):
     def echo(self, msg):
         raise ZeroDivisionError("This will get thrown on the client if it calls this method")
 
-test = ExceptionService(50001, debug = True)
-test.run_wait()
+if __name__ == "__main__":
+    test = ExceptionService(50001, debug = True)
+    test.run_wait()

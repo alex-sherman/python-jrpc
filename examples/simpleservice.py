@@ -6,5 +6,6 @@ class SimpleService(jrpc.service.SocketObject):
     def echo(self, msg):
         return msg
 
-server = SimpleService(50001, debug = True) #Include the listening port
-server.run_wait()
+if __name__ == "__main__":
+    server = SimpleService(50001, debug = True) #Include the listening port
+    server.run_wait()

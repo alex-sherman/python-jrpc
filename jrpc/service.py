@@ -28,9 +28,24 @@ class SocketObject(threading.Thread):
         self.reuseaddr = reuseaddr
         socket.setdefaulttimeout(timeout)
         self.responders = []
-        self.jbus_methods = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
-        for jbus_method in self.jbus_methods.values():
-            jbus_method.instance = self
+        self.jrpc_objects = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
+        for jrpc_method in self.jrpc_objects.values():
+            jrpc_method.instance = self
+
+    def __setattr__(self, name, value):
+        if isinstance(value, SocketObject):
+            self.jrpc_objects[name] = value
+        threading.Thread.__setattr__(self, name, value)
+
+    def get_method(self, path):
+        if path[0] not in self.jrpc_objects:
+            return None
+        output = self.jrpc_objects[path[0]]
+        if len(path) == 1:
+            if not isinstance(output, method):
+                return None
+            return output
+        return output.get_method(path[1:])
 
     def run_wait(self):
         try:
@@ -90,10 +105,11 @@ class ServiceResponder(threading.Thread):
                 msg = message.deserialize(self.socket)
                 if type(msg) is message.Request:
                     response = message.Response(msg.id)
-                    if msg.method in self.service_obj.jbus_methods:
+                    method_target = self.service_obj.get_method(msg.method.split('.'))
+                    if method_target != None:
                         self.service_obj.lock.acquire()
                         try:
-                            response.result = self.service_obj.jbus_methods[msg.method](msg.params)
+                            response.result = method_target(msg.params)
                             self.log.info("{0} called \"{1}\" returning {2}".format(self.addr, msg.method, json.dumps(response.result)))
                         except Exception as e:
                             self.log.info("An exception occured while calling {0}: {1}".format(msg.method, e))
