@@ -11,16 +11,16 @@ class method(object):
     def __init__(self, remote_func):
         self.remote_func = remote_func
         self.instance = None
-    def __call__(self, params):
+    def __call__(self, *args, **kwargs):
         if self.instance == None: raise exception.MethodException("Method instance not set before being called")
-        return self.remote_func(self.instance, *params[0], **params[1])
+        return self.remote_func(self.instance, *args, **kwargs)
 
 class SocketObject(threading.Thread):
     remote_functions = []
     def __init__(self, port, host = '', debug = False, timeout = 1, reuseaddr = True):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
-        self.log = logging.Logger(debug)
+        self._log = logging.Logger(debug)
         self.running = False
         self.registered = False
         self.port = port
@@ -64,29 +64,33 @@ class SocketObject(threading.Thread):
         self.s.bind((self.host, self.port))
         self.port = self.s.getsockname()[1]              
         self.s.listen(1)
-        self.log.info("Service listening on port {0}".format(self.port))
+        self._log.info("Service listening on port {0}".format(self.port))
 
     def run(self):
         while self.running:
             try:
                 conn, addr = self.s.accept()
-                self.log.info("Got connection from {0}".format(addr))
-                responder = ServiceResponder(self, conn, addr, self.log)
+                self._log.info("Got connection from {0}".format(addr))
+                responder = ServiceResponder(self, conn, addr, self._log)
                 responder.start()
                 self.responders.append(responder)
             except socket.timeout:
                 continue
             except Exception as e:
-                self.log.error("An error occured: {0}".format(e))
+                self._log.error("An error occured: {0}".format(e))
                 self.close()
             
     def close(self):
         for responder in self.responders:
             responder.close()
+        for name in self.jrpc_objects:
+            service = self.jrpc_objects[name]
+            if isinstance(service, SocketObject):
+                service.close()
         if not self.running: return
         self.running = False
         if self.s != None:
-            self.log.info("Closing socket")
+            self._log.info("Closing socket")
             self.s.close()
             del self.s
 
@@ -96,7 +100,7 @@ class ServiceResponder(threading.Thread):
         self.service_obj = service_obj
         self.socket = socket
         self.addr = addr
-        self.log = log
+        self._log = log
         self.running = True
     def run(self):
         recvd = ""
@@ -109,10 +113,10 @@ class ServiceResponder(threading.Thread):
                     if method_target != None:
                         self.service_obj.lock.acquire()
                         try:
-                            response.result = method_target(msg.params)
-                            self.log.info("{0} called \"{1}\" returning {2}".format(self.addr, msg.method, json.dumps(response.result)))
+                            response.result = method_target(*msg.params[0], **msg.params[1])
+                            self._log.info("{0} called \"{1}\" returning {2}".format(self.addr, msg.method, json.dumps(response.result)))
                         except Exception as e:
-                            self.log.info("An exception occured while calling {0}: {1}".format(msg.method, e))
+                            self._log.info("An exception occured while calling {0}: {1}".format(msg.method, e))
                             response.error = exception.exception_to_error(e)
                         finally:
                             self.service_obj.lock.release()
@@ -121,11 +125,11 @@ class ServiceResponder(threading.Thread):
                     
                     response.serialize(self.socket)
                 else:
-                    self.log.info("Got a message of uknown type")
+                    self._log.info("Got a message of uknown type")
             except socket.timeout:
                 continue
             except Exception as e:
-                self.log.info("Client socket exception: {0}".format(e))
+                self._log.info("Client socket exception: {0}".format(e))
                 break
         self.close()
 
@@ -133,7 +137,7 @@ class ServiceResponder(threading.Thread):
         if not self.running: return
         self.running = False
         if self.socket != None:
-            self.log.info("Client disconnected {0}".format(self.addr))
+            self._log.info("Client disconnected {0}".format(self.addr))
             self.socket.close()
             del self.socket
 
