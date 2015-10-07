@@ -1,9 +1,0 @@
-CMakeFiles
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-*.a
-*.so
-test_proxy
-test_server
-install_manifest.txt
