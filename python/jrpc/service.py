@@ -7,35 +7,31 @@ import json
 import message
 import inspect
 
-class method(object):
+class jrpc_object(object):
+    def __init__(self, instance = None):
+        self.instance = instance
+
+class method(jrpc_object):
     def __init__(self, remote_func):
+        jrpc_object.__init__(self)
         self.remote_func = remote_func
         self.instance = None
     def __call__(self, *args, **kwargs):
-        if self.instance == None: raise exception.MethodException("Method instance not set before being called")
+        if self.instance == None: raise exception.JRPCError("Method instance not set before being called")
         return self.remote_func(self.instance, *args, **kwargs)
 
-class SocketObject(threading.Thread):
-    remote_functions = []
-    def __init__(self, port, host = '', debug = False, timeout = 1, reuseaddr = True):
-        threading.Thread.__init__(self)
-        self.lock = threading.Lock()
-        self._log = logging.Logger(debug)
-        self.running = False
-        self.registered = False
-        self.port = port
-        self.host = host
-        self.reuseaddr = reuseaddr
-        socket.setdefaulttimeout(timeout)
-        self.responders = []
-        self.jrpc_objects = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if type(member[1]) is method}
+class rpc_property(property, jrpc_object):
+    def __init__(self, getter):
+        property.__init__(self, getter)
+        jrpc_object.__init__(self)
+
+class RemoteObject(jrpc_object):
+    def __init__(self):
+        jrpc_object.__init__(self, self)
+        self.jrpc_objects = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if
+        isinstance(member[1], jrpc_object)}
         for jrpc_method in self.jrpc_objects.values():
             jrpc_method.instance = self
-
-    def __setattr__(self, name, value):
-        if isinstance(value, SocketObject):
-            self.jrpc_objects[name] = value
-        threading.Thread.__setattr__(self, name, value)
 
     def get_method(self, path):
         if path[0] not in self.jrpc_objects:
@@ -46,6 +42,21 @@ class SocketObject(threading.Thread):
                 return None
             return output
         return output.get_method(path[1:])
+
+
+class SocketObject(threading.Thread, RemoteObject):
+    def __init__(self, port, host = '', debug = False, timeout = 1, reuseaddr = True):
+        threading.Thread.__init__(self)
+        RemoteObject.__init__(self)
+        self.lock = threading.Lock()
+        self._log = logging.Logger(debug)
+        self.running = False
+        self.registered = False
+        self.port = port
+        self.host = host
+        self.reuseaddr = reuseaddr
+        socket.setdefaulttimeout(timeout)
+        self.responders = []
 
     def run_wait(self):
         try:
