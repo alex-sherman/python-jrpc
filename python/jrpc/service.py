@@ -6,43 +6,69 @@ import exception
 import json
 import message
 import inspect
+import types
+import reflection
+from reflection import RPCType
 
-class jrpc_object(object):
-    def __init__(self, instance = None):
-        self.instance = instance
+def method(*args):
+    if(len(args) > 0 and isinstance(args[0], types.FunctionType)):
+        args[0].jrpc_method = True
+        argSpec = inspect.getargspec(args[0])
+        defaults = len(argSpec[3]) if argSpec[3] != None else 0
+        argNames = argSpec[0][1:]
+        argTypes = args[1:] if len(args) > 1 else []
+        argCount = len(argNames)
+        while len(argTypes) < len(argNames):
+            argTypes.append(reflection.UNKNOWN())
+        #Mark any parameters with defaults as optional
+        if defaults > 0:
+            for optionalArg in argTypes[-defaults:]:
+                optionalArg.optional = True
+        args[0].arguments = zip(argNames, argTypes)
+        return args[0]
+    return lambda func: method(func, *args)
 
-class method(jrpc_object):
-    def __init__(self, remote_func):
-        jrpc_object.__init__(self)
-        self.remote_func = remote_func
-        self.instance = None
-    def __call__(self, *args, **kwargs):
-        if self.instance == None: raise exception.JRPCError("Method instance not set before being called")
-        return self.remote_func(self.instance, *args, **kwargs)
-
-class rpc_property(property, jrpc_object):
+class rpc_property(property):
     def __init__(self, getter):
         property.__init__(self, getter)
         jrpc_object.__init__(self)
 
-class RemoteObject(jrpc_object):
-    def __init__(self):
-        jrpc_object.__init__(self, self)
-        self.jrpc_objects = {member[0] : member[1] for member in inspect.getmembers(self.__class__) if
-        isinstance(member[1], jrpc_object)}
-        for jrpc_method in self.jrpc_objects.values():
-            jrpc_method.instance = self
+class RemoteObject(object):
+    def _get_methods(self):
+        return dict([method for method in inspect.getmembers(self) if hasattr(method[1], "jrpc_method") and method[1].jrpc_method])
+    def _get_objects(self):
+        return dict([obj for obj in inspect.getmembers(self) if isinstance(obj[1], RemoteObject)])
 
     def get_method(self, path):
-        if path[0] not in self.jrpc_objects:
-            return None
-        output = self.jrpc_objects[path[0]]
-        if len(path) == 1:
-            if not isinstance(output, method):
-                return None
-            return output
-        return output.get_method(path[1:])
+        methods = self._get_methods()
+        if path[0] in methods:
+            return methods[path[0]]
+        objects = self._get_objects()
+        if len(path) > 1 and path[0] in objects:
+            return objects.get_method(path[1:])
+        return None
 
+    @method
+    def Reflect(self, types = {}):
+        """Reflect returns optional information about
+        the remote object's endpoints. The author may not
+        specify any reflection information, in which case,
+        this will return mostly empty. If specified, this
+        method will return custom types, method signatures
+        and sub object reflection information
+        """
+        types = dict(types)
+        selfTypes = {}
+        methods = {}
+        for name, method in self._get_methods().iteritems():
+            methods[name] = RPCType.ToDict(method.arguments)
+            selfTypes.update(RPCType.ToTypeDef(method.arguments, types))
+        interfaces = dict([(name, obj.Reflect(types)) for name, obj in self._get_objects().iteritems()])
+        return {
+            "types": selfTypes,
+            "methods": methods,
+            "interfaces": interfaces
+        }
 
 class SocketObject(threading.Thread, RemoteObject):
     def __init__(self, port, host = '', debug = False, timeout = 1, reuseaddr = True):
@@ -94,10 +120,6 @@ class SocketObject(threading.Thread, RemoteObject):
     def close(self):
         for responder in self.responders:
             responder.close()
-        for name in self.jrpc_objects:
-            service = self.jrpc_objects[name]
-            if isinstance(service, SocketObject):
-                service.close()
         if not self.running: return
         self.running = False
         if self.s != None:
