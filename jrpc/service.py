@@ -10,8 +10,10 @@ import types
 import reflection
 from reflection import RPCType
 
-def method(*args):
+def method(*args, **kwargs):
     if(len(args) > 0 and isinstance(args[0], types.FunctionType)):
+        if "path" in kwargs:
+            args[0].path = kwargs["path"]
         args[0].jrpc_method = True
         argSpec = inspect.getargspec(args[0])
         defaults = len(argSpec[3]) if argSpec[3] != None else 0
@@ -26,7 +28,7 @@ def method(*args):
                 optionalArg.optional = True
         args[0].arguments = zip(argNames, argTypes)
         return args[0]
-    return lambda func: method(func, *args)
+    return lambda func: method(func, *args, **kwargs)
 
 class rpc_property(property):
     def __init__(self, getter):
@@ -63,7 +65,7 @@ class RemoteObject(object):
         for name, method in self._get_methods().iteritems():
             methods[name] = RPCType.ToDict(method.arguments)
             selfTypes.update(RPCType.ToTypeDef(method.arguments, types))
-        interfaces = dict([(name, obj.Reflect(types)) for name, obj in self._get_objects().iteritems()])
+        interfaces = dict([dict(name = name, **obj.Reflect(types)) for name, obj in self._get_objects().iteritems()])
         return {
             "types": selfTypes,
             "methods": methods,

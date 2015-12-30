@@ -7,7 +7,7 @@ class RPCType(object):
     @staticmethod
     def ToDict(members):
         """Converts an argument list [(name, type), (name, type)...] into a JSON serializble array"""
-        return [(attribute[0], attribute[1].toDict()) for attribute in members]
+        return [dict(name = attribute[0], **attribute[1].toDict()) for attribute in members]
 
     @staticmethod
     def ToTypeDef(members, typeDef):
@@ -59,6 +59,11 @@ class UNKNOWN(RPCType):
 class OBJECT(RPCType):
     pass
 
+class ARRAY(RPCType):
+    def __init__(self, type = None):
+        RPCType.__init__(self)
+        self.type = type if type != None else OBJECT()
+
 class NUMBER(RPCType):
     def __init__(self, vmin = None, vmax = None):
         RPCType.__init__(self)
@@ -70,4 +75,10 @@ class NUMBER(RPCType):
 class STRING(RPCType):
     pass
 
-PRIMITIVES = [UNKNOWN, OBJECT, NUMBER, STRING]
+class ENUM(RPCType):
+    def __init__(self, *options):
+        RPCType.__init__(self)
+        self.options = options
+
+
+PRIMITIVES = [UNKNOWN, OBJECT, NUMBER, STRING, ARRAY, ENUM]
