@@ -12,6 +12,6 @@ class JRPCBlueprint(Blueprint, RemoteObject):
         RemoteObject.__init__(self)
         for name, meth in self._get_methods().iteritems():
             url = '/'+name
-            if hasattr(meth, 'path'):
-                url = meth.path
+            if 'path' in meth.options:
+                url = meth.options['path']
             self.add_url_rule(url, name, EndpointWrapper(meth))

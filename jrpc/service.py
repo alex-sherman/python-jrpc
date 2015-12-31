@@ -12,8 +12,7 @@ from reflection import RPCType
 
 def method(*args, **kwargs):
     if(len(args) > 0 and isinstance(args[0], types.FunctionType)):
-        if "path" in kwargs:
-            args[0].path = kwargs["path"]
+        args[0].options = kwargs
         args[0].jrpc_method = True
         argSpec = inspect.getargspec(args[0])
         defaults = len(argSpec[3]) if argSpec[3] != None else 0
@@ -47,7 +46,7 @@ class RemoteObject(object):
             return methods[path[0]]
         objects = self._get_objects()
         if len(path) > 1 and path[0] in objects:
-            return objects.get_method(path[1:])
+            return objects[path[0]].get_method(path[1:])
         return None
 
     @method
@@ -207,9 +206,8 @@ class SocketProxy(object):
     def rpc(self, remote_procedure, args, kwargs):
         self.lock.acquire()
         try:
-            msg = message.Request(self.next_id, remote_procedure)
+            msg = message.Request(self.next_id, remote_procedure, [args, kwargs])
             self.next_id += 1
-            msg.params = [args, kwargs]
 
             # Attempt sending and connection if neccessary
             try:
