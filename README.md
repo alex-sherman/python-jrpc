@@ -86,7 +86,6 @@ jrpc("/api").done(function(api) {
 
 Python-JRPC takes all of the boiler-plate code out of your network applications.
 Forget reading through socket documentation and developing your own message formats.
-Making Flask web services is streamlined by not having to read request arguments, or remember which arguments are passed in the URL.
 All you need to do is write your Python server/client logic and let Python-JRPC handle the networking for you.
 Here's what you get:
 
