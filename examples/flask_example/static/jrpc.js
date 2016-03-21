@@ -21,7 +21,7 @@ var jrpc = function(prefix) {
                 for(var i = 0; i < argArray.length && i < method.arguments.length; i++) {
                     args[method.arguments[i].name] = argArray[i];
                 }
-                if(arguments[1].constructor === Object) {
+                if(arguments.length > 1 && arguments[1].constructor === Object) {
                     args = Object.assign(args, arguments[1]);
                 }
             }

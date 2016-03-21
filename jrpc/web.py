@@ -21,7 +21,6 @@ class JRPCBlueprint(Blueprint, RemoteObject):
             url = prefix + '/' + name
             if 'path' in meth.options:
                 url = prefix + meth.options['path']
-            print url, name
             self.add_url_rule(url, url, EndpointWrapper(meth), methods = ["POST"])
 
         for name, obj in obj._get_objects().iteritems():

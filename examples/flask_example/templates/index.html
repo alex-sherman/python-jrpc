@@ -4,7 +4,9 @@
 <div id = "result"></div>
 
 <script>
-    jrpc("/api").done(function(api) {
+    var api;
+    jrpc("/api").done(function(_api) {
+        api = _api;
         api.echo({name: "Python JRPC", text: "Now with more Flask"}).done(function(result) {
             $("#result").text(JSON.stringify(result));
         });
