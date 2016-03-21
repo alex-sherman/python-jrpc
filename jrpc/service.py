@@ -62,7 +62,7 @@ class RemoteObject(object):
         selfTypes = {}
         methods = {}
         for name, method in self._get_methods().iteritems():
-            methods[name] = RPCType.ToDict(method.arguments)
+            methods[name] = {'options': method.options, 'arguments': RPCType.ToDict(method.arguments)}
             selfTypes.update(RPCType.ToTypeDef(method.arguments, types))
 
         interfaces = dict([(name, obj.Reflect(types)) for name, obj in self._get_objects().iteritems()])

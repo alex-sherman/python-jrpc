@@ -13,9 +13,9 @@ class JRPCBlueprint(Blueprint, RemoteObject):
         RemoteObject.__init__(self)
         self.registerObjMethods(self)
 
-    def registerObjMethods(self, obj, prefix = '/'):
+    def registerObjMethods(self, obj, prefix = ''):
         for name, meth in obj._get_methods().iteritems():
-            url = prefix + name
+            url = prefix + '/' + name
             if 'path' in meth.options:
                 url = prefix + meth.options['path']
             print url, name

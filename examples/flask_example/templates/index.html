@@ -1,0 +1,13 @@
+<script src="https://code.jquery.com/jquery-2.2.2.min.js" integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI=" crossorigin="anonymous"></script>
+<script src="{{url_for('static', filename='jrpc.js')}}"></script>
+
+<div id = "result"></div>
+
+<script>
+    jrpc("/api").done(function(api) {
+        console.log(api);
+        api.echo(["c"], {"text": "b"}).done(function(result) {
+            $("#result").text(JSON.stringify(result));
+        });
+    });
+</script>
