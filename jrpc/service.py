@@ -10,8 +10,9 @@ import types
 import reflection
 from reflection import RPCType
 
-def method(*args):
+def method(*args, **kwargs):
     if(len(args) > 0 and isinstance(args[0], types.FunctionType)):
+        args[0].options = kwargs
         args[0].jrpc_method = True
         argSpec = inspect.getargspec(args[0])
         defaults = len(argSpec[3]) if argSpec[3] != None else 0
@@ -26,7 +27,7 @@ def method(*args):
                 optionalArg.optional = True
         args[0].arguments = zip(argNames, argTypes)
         return args[0]
-    return lambda func: method(func, *args)
+    return lambda func: method(func, *args, **kwargs)
 
 class rpc_property(property):
     def __init__(self, getter):
@@ -45,7 +46,7 @@ class RemoteObject(object):
             return methods[path[0]]
         objects = self._get_objects()
         if len(path) > 1 and path[0] in objects:
-            return objects.get_method(path[1:])
+            return objects[path[0]].get_method(path[1:])
         return None
 
     @method
@@ -61,8 +62,9 @@ class RemoteObject(object):
         selfTypes = {}
         methods = {}
         for name, method in self._get_methods().iteritems():
-            methods[name] = RPCType.ToDict(method.arguments)
+            methods[name] = {'options': method.options, 'arguments': RPCType.ToDict(method.arguments)}
             selfTypes.update(RPCType.ToTypeDef(method.arguments, types))
+
         interfaces = dict([(name, obj.Reflect(types)) for name, obj in self._get_objects().iteritems()])
         return {
             "types": selfTypes,
@@ -205,9 +207,8 @@ class SocketProxy(object):
     def rpc(self, remote_procedure, args, kwargs):
         self.lock.acquire()
         try:
-            msg = message.Request(self.next_id, remote_procedure)
+            msg = message.Request(self.next_id, remote_procedure, [args, kwargs])
             self.next_id += 1
-            msg.params = [args, kwargs]
 
             # Attempt sending and connection if neccessary
             try:

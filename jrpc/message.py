@@ -71,7 +71,7 @@ class Message(object):
         else: self.obj[name] = value
 
 class Request(Message):
-    required_fields = ["id", "method", "jsonrpc"]
+    required_fields = ["id", "method", "jsonrpc", "params"]
     @staticmethod
     def json_obj_is(json_obj):
         return all([field in json_obj for field in Request.required_fields])
@@ -79,11 +79,11 @@ class Request(Message):
     def from_json(json_obj):
         if not Request.json_obj_is(json_obj):
             raise exception.InvalidReqeust("Message is not a request")
-        request = Request(json_obj["id"], json_obj["method"], json_obj["jsonrpc"])
-        if "params" in json_obj: request.params = json_obj["params"]
+        request = Request(json_obj["id"], json_obj["method"], json_obj["params"], json_obj["jsonrpc"])
         return request
-    def __init__(self, id, method, jsonrpc = "2.0"):
+    def __init__(self, id, method, params, jsonrpc = "2.0"):
         Message.__init__(self, {"jsonrpc": jsonrpc, "id": id, "method": method})
+        self.params = params
 
 class Response(Message):
     required_fields = ["id", "jsonrpc"]
