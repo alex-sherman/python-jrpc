@@ -1,82 +1,112 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
     <title>Python-jrpc by alex-sherman</title>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/respond.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--[if lt IE 8]>
-    <link rel="stylesheet" href="stylesheets/ie.css">
-    <![endif]-->
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
   <body>
-      <div id="header">
-        <nav>
-          <li class="fork"><a href="https://github.com/alex-sherman/python-jrpc">View On GitHub</a></li>
-          <li class="downloads"><a href="https://github.com/alex-sherman/python-jrpc/zipball/master">ZIP</a></li>
-          <li class="downloads"><a href="https://github.com/alex-sherman/python-jrpc/tarball/master">TAR</a></li>
-          <li class="title">DOWNLOADS</li>
-        </nav>
-      </div><!-- end header -->
+    <section class="page-header">
+      <h1 class="project-name">Python-jrpc</h1>
+      <h2 class="project-tagline">A Python remote procedure call framework that uses JSON RPC v2.0</h2>
+      <a href="https://github.com/alex-sherman/python-jrpc" class="btn">View on GitHub</a>
+      <a href="https://github.com/alex-sherman/python-jrpc/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/alex-sherman/python-jrpc/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-    <div class="wrapper">
+    <section class="main-content">
+      <h1>
+<a id="python-jrpc" class="anchor" href="#python-jrpc" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Python-JRPC</h1>
 
-      <section>
-        <div id="title">
-          <h1>Python-jrpc</h1>
-          <p>A Python remote procedure call framework that uses JSON RPC v2.0</p>
-          <hr>
-          <span class="credits left">Project maintained by <a href="https://github.com/alex-sherman">alex-sherman</a></span>
-          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
-        </div>
+<p>A Python remote procedure call framework that uses JSON RPC v2.0</p>
 
-        <h1>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h1>
+<p>Install using pip:</p>
 
 <pre><code>pip install python-jrpc
 </code></pre>
 
 <h1>
-<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
+<a id="socket-based-usage" class="anchor" href="#socket-based-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Socket Based Usage</h1>
 
 <p>Python-JRPC allows programmers to create powerful client/server programs with very little code.
 Here's an example of a server and client:</p>
 
 <h2>
-<a id="server" class="anchor" href="#server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Server</h2>
+<a id="server" class="anchor" href="#server" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Server</h2>
 
-<div class="highlight highlight-python"><pre><span class="pl-k">import</span> jrpc
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> jrpc
 
-<span class="pl-st">class</span> <span class="pl-en">SimpleService</span>(<span class="pl-e">jrpc.service.SocketObject</span>):
+<span class="pl-k">class</span> <span class="pl-en">SimpleService</span>(<span class="pl-e">jrpc</span>.<span class="pl-e">service</span>.<span class="pl-e">SocketObject</span>):
     <span class="pl-en">@jrpc.service.method</span>
-    <span class="pl-st">def</span> <span class="pl-en">echo</span>(<span class="pl-vpf">self</span>, <span class="pl-vpf">msg</span>):
+    <span class="pl-k">def</span> <span class="pl-en">echo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">msg</span>):
         <span class="pl-k">return</span> msg
 
 server <span class="pl-k">=</span> SimpleService(<span class="pl-c1">50001</span>) <span class="pl-c">#Include the listening port</span>
 server.run_wait()</pre></div>
 
 <h2>
-<a id="client" class="anchor" href="#client" aria-hidden="true"><span class="octicon octicon-link"></span></a>Client</h2>
+<a id="client" class="anchor" href="#client" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Client</h2>
 
-<div class="highlight highlight-python"><pre><span class="pl-k">import</span> jrpc
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> jrpc
 
 server <span class="pl-k">=</span> <span class="pl-c1">None</span>
 server <span class="pl-k">=</span> jrpc.service.SocketProxy(<span class="pl-c1">50001</span>) <span class="pl-c">#The server's listening port</span>
-<span class="pl-k">print</span> server.echo(<span class="pl-s1"><span class="pl-pds">"</span>Hello World!<span class="pl-pds">"</span></span>)</pre></div>
+<span class="pl-c1">print</span> server.echo(<span class="pl-s"><span class="pl-pds">"</span>Hello World!<span class="pl-pds">"</span></span>)</pre></div>
 
 <h1>
-<a id="why-use-it" class="anchor" href="#why-use-it" aria-hidden="true"><span class="octicon octicon-link"></span></a>Why Use It?</h1>
+<a id="web-based-flask-usage" class="anchor" href="#web-based-flask-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Web Based (Flask) Usage</h1>
+
+<p>A recent addition to Python JRPC offers Flask integration.
+Using this feature, client side Javascript can easily call webservice API methods.</p>
+
+<h2>
+<a id="flask-app" class="anchor" href="#flask-app" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Flask App</h2>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> jrpc.web <span class="pl-k">import</span> <span class="pl-k">*</span>
+<span class="pl-k">import</span> jrpc.service
+<span class="pl-k">from</span> flask <span class="pl-k">import</span> Flask, render_template
+
+app <span class="pl-k">=</span> Flask(<span class="pl-c1">__name__</span>)
+
+<span class="pl-k">class</span> <span class="pl-en">WebService</span>(<span class="pl-e">JRPCBlueprint</span>):
+    <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>):
+        JRPCBlueprint.<span class="pl-c1">__init__</span>(<span class="pl-v">self</span>, <span class="pl-s"><span class="pl-pds">"</span>service<span class="pl-pds">"</span></span>, <span class="pl-c1">__name__</span>, <span class="pl-v">url_prefix</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>/api<span class="pl-pds">"</span></span>)
+
+    <span class="pl-en">@jrpc.service.method</span>(<span class="pl-v">path</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>/echo/&lt;name&gt;<span class="pl-pds">"</span></span>)
+    <span class="pl-k">def</span> <span class="pl-en">echo</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">text</span>, <span class="pl-smi">prefix</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Hello from<span class="pl-pds">"</span></span>, <span class="pl-smi">name</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>):
+        <span class="pl-k">return</span> {<span class="pl-s"><span class="pl-pds">"</span>subject<span class="pl-pds">"</span></span>: prefix <span class="pl-k">+</span> <span class="pl-s"><span class="pl-pds">"</span> <span class="pl-pds">"</span></span> <span class="pl-k">+</span> name, <span class="pl-s"><span class="pl-pds">"</span>message<span class="pl-pds">"</span></span>: text}
+
+app.register_blueprint(WebService())
+
+<span class="pl-en">@app.route</span>(<span class="pl-s"><span class="pl-pds">'</span>/<span class="pl-pds">'</span></span>)
+<span class="pl-k">def</span> <span class="pl-en">index</span>():
+    <span class="pl-k">return</span> render_template(<span class="pl-s"><span class="pl-pds">"</span>index.html<span class="pl-pds">"</span></span>)
+app.run(<span class="pl-v">host</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>0.0.0.0<span class="pl-pds">'</span></span>, <span class="pl-v">port</span><span class="pl-k">=</span><span class="pl-c1">8080</span>, <span class="pl-v">debug</span><span class="pl-k">=</span><span class="pl-c1">True</span>)</pre></div>
+
+<h2>
+<a id="indexhtml-javascript" class="anchor" href="#indexhtml-javascript" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Index.html Javascript</h2>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-en">jrpc</span>(<span class="pl-s"><span class="pl-pds">"</span>/api<span class="pl-pds">"</span></span>).<span class="pl-en">done</span>(<span class="pl-k">function</span>(<span class="pl-smi">api</span>) {
+    <span class="pl-smi">api</span>.<span class="pl-en">echo</span>({name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Python JRPC<span class="pl-pds">"</span></span>, text<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>Now with more Flask<span class="pl-pds">"</span></span>}).<span class="pl-en">done</span>(<span class="pl-k">function</span>(<span class="pl-smi">result</span>) {
+        <span class="pl-en">$</span>(<span class="pl-s"><span class="pl-pds">"</span>#result<span class="pl-pds">"</span></span>).<span class="pl-c1">text</span>(<span class="pl-c1">JSON</span>.<span class="pl-en">stringify</span>(result));
+    });
+});</pre></div>
+
+<h2>
+<a id="result" class="anchor" href="#result" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Result</h2>
+
+<div class="highlight highlight-source-json"><pre>{<span class="pl-s"><span class="pl-pds">"</span>subject<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Hello from Python JRPC<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>message<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Now with more Flask<span class="pl-pds">"</span></span>}</pre></div>
+
+<h1>
+<a id="why-use-it" class="anchor" href="#why-use-it" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why Use It?</h1>
 
 <p>Python-JRPC takes all of the boiler-plate code out of your network applications.
 Forget reading through socket documentation and developing your own message formats.
+Making Flask web services is streamlined by not having to read request arguments, or remember which arguments are passed in the URL.
 All you need to do is write your Python server/client logic and let Python-JRPC handle the networking for you.
 Here's what you get:</p>
 
@@ -84,11 +114,17 @@ Here's what you get:</p>
 <li>Remote method call with JSON serializable parameters/return values</li>
 <li>Synchronization/thread safety in servers/clients</li>
 <li>Remote exception passing (When calling a remote method in a client, exceptions thrown by the server code will be thrown locally!)</li>
+<li>Simplified Flask applications, client side Javascript can easily call webservice API methods</li>
 </ul>
-      </section>
 
-    </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-    
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/alex-sherman/python-jrpc">Python-jrpc</a> is maintained by <a href="https://github.com/alex-sherman">alex-sherman</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
   </body>
 </html>
