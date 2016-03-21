@@ -30,18 +30,26 @@ var jrpc = function(prefix) {
             }
             return $.ajax({
                 url: prefix + getURL(method, args),
-                dataType: "json"
+                dataType: "json",
+                contentType: "application/json",
+                method: "POST",
+                data: JSON.stringify(args)
             });
         }
         return methodCaller;
     }
-    $.getJSON(prefix + "/Reflect", function(data) {
-        var jrpc = {}
-        for(var methodName in data.methods) {
-            var method = Object.assign(data.methods[methodName], {"name": methodName});
-            jrpc[methodName] = makeMethodCaller(prefix, method);
+    $.ajax({
+        url: prefix + "/Reflect",
+        dataType: "json",
+        method: "POST",
+        success: function(data) {
+            var jrpc = {}
+            for(var methodName in data.methods) {
+                var method = Object.assign(data.methods[methodName], {"name": methodName});
+                jrpc[methodName] = makeMethodCaller(prefix, method);
+            }
+            dff.resolve(jrpc);
         }
-        dff.resolve(jrpc);
     });
     return dff;
 }

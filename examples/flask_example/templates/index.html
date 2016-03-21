@@ -5,8 +5,7 @@
 
 <script>
     jrpc("/api").done(function(api) {
-        console.log(api);
-        api.echo(["c"], {"text": "b"}).done(function(result) {
+        api.echo({name: "Python JRPC", text: "Now with more Flask"}).done(function(result) {
             $("#result").text(JSON.stringify(result));
         });
     });

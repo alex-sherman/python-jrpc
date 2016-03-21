@@ -1,16 +1,17 @@
 from jrpc.web import *
-from jrpc.service import method
-from flask import Flask, render_template, url_for
+import jrpc.service
+from flask import Flask, render_template
+
+app = Flask(__name__)
 
 class WebService(JRPCBlueprint):
     def __init__(self):
-        JRPCBlueprint.__init__(self, "service", __name__, url_prefix="/api", template_folder="templates", static_folder="static")
+        JRPCBlueprint.__init__(self, "service", __name__, url_prefix="/api")
 
-    @method(path = "/echo/<text>/<faff>")
-    def echo(self, faff, text):
-        return text + faff
+    @jrpc.service.method(path = "/echo/<name>")
+    def echo(self, text, prefix = "Hello from", name = ""):
+        return {"subject": prefix + " " + name, "message": text}
 
-app = Flask(__name__, template_folder="templates")
 app.register_blueprint(WebService())
 
 @app.route('/')
