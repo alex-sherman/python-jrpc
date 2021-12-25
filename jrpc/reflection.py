@@ -6,7 +6,7 @@ class RPCType(object):
 
     @staticmethod
     def ToDict(members):
-        """Converts an argument list [(name, type), (name, type)...] into a JSON serializble array"""
+        """Converts an argument list [(name, type), (name, type)...] into a JSON serializable array"""
         return [dict(name = attribute[0], **attribute[1].toDict()) for attribute in members]
 
     @staticmethod

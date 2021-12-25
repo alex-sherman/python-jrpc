@@ -210,7 +210,7 @@ class SocketProxy(object):
             msg = message.Request(self.next_id, remote_procedure, [args, kwargs])
             self.next_id += 1
 
-            # Attempt sending and connection if neccessary
+            # Attempt sending and connection if necessary
             try:
                 msg.serialize(self.socket)
             except socket.error as e:
